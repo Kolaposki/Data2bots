@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from decouple import config
 
 from pathlib import Path
+import datetime
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +41,8 @@ INSTALLED_APPS = [
 
     # External dependencies
     'rest_framework',
-    'drf-yasg'
+    'drf_yasg',  # swagger documentation
+    'drf_user',  # for authenticating users
 ]
 
 MIDDLEWARE = [
@@ -123,3 +125,39 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    # allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny'
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ]
+
+}
+
+# JWTAuthentication settings
+# see https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+
+}
+
+# drf_user settings - https://drf-user.readthedocs.io/en/latest/installation.html
+AUTH_USER_MODEL = 'drf_user.User'  # dont use django user model but drf_user instead
+AUTHENTICATION_BACKENDS = [
+    'drf_user.auth.MultiFieldModelBackend',  # to support login with email/mobile
+]
+USER_SETTINGS = {
+    "MOBILE_OPTIONAL": True,
+    'DEFAULT_ACTIVE_STATE': False,
+    'MOBILE_VALIDATION': True,
+    'EMAIL_VALIDATION': True,
+    'REGISTRATION': {
+        'SEND_MAIL': False,
+        'SEND_MESSAGE': False,
+    }
+}
