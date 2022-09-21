@@ -8,10 +8,33 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
 from drf_user.models import User
+from rest_framework.generics import get_object_or_404
 
-from .api.serializers import UserSerializer
+from .api.serializers import UserSerializer, ProductSerializer
+from .models import Product
+from rest_framework.generics import ListAPIView
 
 
+# api-view for products
+class ProductsView(APIView):
+    """
+       Gets all the products or by id. Adding of products isn't considered in objectives. Add products through admin
+    """
+    permission_classes = (AllowAny,)  # allow any unathenticated request
+
+    def get(self, request, pk=None):
+        if pk:
+            product = get_object_or_404(Product, pk=pk)
+            serializer = ProductSerializer(product)
+            return Response({"product": serializer.data}, status=status.HTTP_200_OK)
+
+        # No PK provided. return all products
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)  # return all products
+        return Response({"products": serializer.data}, status=status.HTTP_200_OK)
+
+
+# API for registering users
 class RegisterView(CreateAPIView):
     """
     Register View
@@ -33,7 +56,7 @@ class RegisterView(CreateAPIView):
             "username": serializer.validated_data["username"],
             "email": serializer.validated_data["email"],
             "password": serializer.validated_data["password"],
-            "name": '',  # name is required in the user model. So we set to empty string for now
+            "name": serializer.validated_data["name"],
         }
         try:
             data["mobile"] = serializer.validated_data["mobile"]
@@ -42,12 +65,14 @@ class RegisterView(CreateAPIView):
                 raise ValidationError({"error": "Mobile is required."})
 
         new_user = User.objects.create_user(**data)  # Creates a normal user
+        # TODO: Create profile automatically
         print("new_user", new_user)
         refresh = RefreshToken.for_user(new_user)
         print("refresh", refresh)
 
         data = {
             "username": new_user.username,
+            "name": new_user.name,
             "email": new_user.email,
             "mobile": new_user.mobile,
             'refresh': str(refresh),
