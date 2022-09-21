@@ -1,6 +1,5 @@
 from django.contrib import admin
-
-from .models import Product, Order,OrderProduct, Payment, Address, Profile
+from .models import Product, Order, OrderProduct, Payment, Address, Profile
 
 
 def make_refund_accepted(modeladmin, request, queryset):
