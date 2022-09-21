@@ -53,6 +53,8 @@ class Product(models.Model):
         self.slug = slugify(self.title)
         super(Product, self).save(*args, **kwargs)
 
+    class Meta:
+        ordering = ('-update_on',)
     # def get_absolute_url(self):
     #     return reverse("product_detail", kwargs={"slug": self.slug})
 
@@ -61,7 +63,7 @@ class OrderProduct(models.Model):
     """
     Order made on a single product
     """
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
@@ -77,8 +79,8 @@ class Order(models.Model):
     """
     Total order of all Products
     """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL,
+                              on_delete=models.CASCADE)
     products = models.ManyToManyField(OrderProduct)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
@@ -106,6 +108,9 @@ class Order(models.Model):
             total += order_product.get_total_product_price()
 
         return total
+
+    class Meta:
+        ordering = ('-ordered_date',)
 
 
 class Address(models.Model):
