@@ -1,18 +1,34 @@
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import AllowAny
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import CreateAPIView, get_object_or_404
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
 from drf_user.models import User
-from rest_framework.generics import get_object_or_404
 
-from .api.serializers import UserSerializer, ProductSerializer
-from .models import Product
-from rest_framework.generics import ListAPIView
+from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderProductSerializer
+from .models import Product, Order, OrderProduct
+
+
+# api-view for products
+class OrderProductView(APIView):
+    """
+       Gets all the ordered-products or by id.
+    """
+    permission_classes = [IsAuthenticated]  # only allow authenticated users
+
+    def get(self, request, pk=None):
+        if pk:
+            order_product = get_object_or_404(OrderProduct, pk=pk)
+            serializer = OrderProductSerializer(order_product)
+            return Response({"order_product": serializer.data}, status=status.HTTP_200_OK)
+
+        # No PK provided. return all OrderProduct
+        order_products = OrderProduct.objects.all()
+        serializer = OrderProductSerializer(order_products, many=True)  # return all order_products
+        return Response({"order_products": serializer.data}, status=status.HTTP_200_OK)
 
 
 # api-view for products

@@ -24,15 +24,6 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class OrderProductSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True, many=True)
-
-    class Meta:
-        model = OrderProduct
-        # fields = ('product',)
-        fields = "__all__"
-
-
 class UserSerializer(serializers.ModelSerializer):
     """
     UserRegisterSerializer is a model serializer which includes the
@@ -50,8 +41,16 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "mobile",
             "password",
-            "is_superuser",
-            "is_staff",
         )
         read_only_fields = ("is_superuser", "is_staff")
         extra_kwargs = {"password": {"write_only": True}}
+
+
+class OrderProductSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+    buyer = UserSerializer()
+
+    class Meta:
+        model = OrderProduct
+        fields = ('id', 'buyer', 'product', 'ordered', 'quantity',)
+        # fields = "__all__"
