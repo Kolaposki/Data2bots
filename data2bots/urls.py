@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt import views as jwt_views
 from client.views import RegisterView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('client.api.urls')),
@@ -25,6 +26,6 @@ urlpatterns = [
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
     path('api/user/register/', RegisterView.as_view(), name="register_user"),
 
-    path('api/user/', include('drf_user.urls')), # drf_user urls
+    path('api/user/', include('drf_user.urls')),  # drf_user urls
 
 ]
