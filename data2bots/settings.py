@@ -151,13 +151,24 @@ AUTH_USER_MODEL = 'drf_user.User'  # dont use django user model but drf_user ins
 AUTHENTICATION_BACKENDS = [
     'drf_user.auth.MultiFieldModelBackend',  # to support login with email/mobile
 ]
+
+# see https://drf-user.readthedocs.io/en/latest/installation.html#manual-settings
 USER_SETTINGS = {
     "MOBILE_OPTIONAL": True,
-    'DEFAULT_ACTIVE_STATE': False,
-    'MOBILE_VALIDATION': True,
-    'EMAIL_VALIDATION': True,
+    'DEFAULT_ACTIVE_STATE': True,
+    'MOBILE_VALIDATION': False,
+    'EMAIL_VALIDATION': False,
     'REGISTRATION': {
         'SEND_MAIL': False,
         'SEND_MESSAGE': False,
+        'MAIL_SUBJECT': 'Welcome to Data2bots',
+        'TEXT_MAIL_BODY': 'Your account has been created.',
+        'HTML_MAIL_BODY': 'Your account has been created.'
     }
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'localhost'
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'
+EMAIL_FROM = DEFAULT_FROM_EMAIL
+
