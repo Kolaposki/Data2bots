@@ -25,11 +25,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    UserRegisterSerializer is a model serializer which includes the
-    attributes that are required for registering a user.
-    """
-
     class Meta:
         """Passing model metadata"""
 
@@ -47,10 +42,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()
-    buyer = UserSerializer()
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.IntegerField()
+    buyer = UserSerializer(read_only=True)
+    buyer_id = serializers.IntegerField()
 
     class Meta:
         model = OrderProduct
-        fields = ('id', 'buyer', 'product', 'ordered', 'quantity',)
-        # fields = "__all__"
+        fields = "__all__"
+        # fields = ('id', 'buyer', 'product', 'ordered', 'quantity',)
+        read_only_fields = ("ordered",)

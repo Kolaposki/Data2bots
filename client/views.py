@@ -30,6 +30,25 @@ class OrderProductView(APIView):
         serializer = OrderProductSerializer(order_products, many=True)  # return all order_products
         return Response({"order_products": serializer.data}, status=status.HTTP_200_OK)
 
+    def post(self, request):
+        try:
+            # Validate data then save
+            serializer = OrderProductSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"status": "success", "result": serializer.data, },
+                                status=status.HTTP_201_CREATED)
+            else:
+                error_dict = {}
+                for field_name, field_errors in serializer.errors.items():
+                    print(field_name, field_errors)
+                    error_dict[field_name] = field_errors[0]
+                return Response({"status": "error", "result": error_dict}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(e)
+            return Response({"status": "error", "result": "An error occurred"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
 
 # api-view for products
 class ProductsView(APIView):
