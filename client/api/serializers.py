@@ -1,5 +1,36 @@
 from rest_framework import serializers
 from drf_user.models import User
+from client.models import Order, OrderProduct, Address, Product
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = "__all__"
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    products = ProductSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Order
+        # fields = ('products',)
+        fields = "__all__"
+
+
+class OrderProductSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = OrderProduct
+        # fields = ('product',)
+        fields = "__all__"
 
 
 class UserSerializer(serializers.ModelSerializer):
