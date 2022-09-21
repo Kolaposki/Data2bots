@@ -49,6 +49,11 @@ class OrderProductView(APIView):
             print(e)
             return Response({"status": "error", "result": "An error occurred"}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
+    def delete(self, request, pk=None):
+        order_product = get_object_or_404(OrderProduct, pk=pk)
+        order_product.delete()
+        return Response({"status": "success", "result": "Item Deleted"})
+
 
 # api-view for products
 class ProductsView(APIView):
