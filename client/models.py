@@ -7,28 +7,6 @@ from django.utils.text import slugify
 import uuid
 
 
-class Profile(models.Model):
-    gender_options = (
-        ("M", "Male"), ("F", "Female"), ("U", "Unspecified")
-    )
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    contact_number = models.CharField(max_length=20, null=False, blank=False)
-    profile_pic = models.ImageField(upload_to="profiles/%Y/%m/%d", null=True, blank=True)
-    name = models.CharField(max_length=250, null=False, blank=False)
-    city = models.CharField(max_length=250, null=True, blank=True)
-    gender = models.CharField(max_length=11, choices=gender_options, null=True, blank=True, default="Unspecified")
-    occupation = models.CharField(max_length=100, null=True, blank=True)
-    street_address = models.CharField(max_length=100, null=True, blank=True)
-    apartment_address = models.CharField(max_length=100, null=True, blank=True)
-    country = models.CharField(max_length=100, null=True, blank=True)
-    zip = models.CharField(max_length=100, null=True, blank=True)
-    added_on = models.DateTimeField(auto_now_add=True, null=True)
-    update_on = models.DateTimeField(auto_now=True, null=True)
-
-    def __str__(self):
-        return self.user.username
-
-
 class Product(models.Model):
     title = models.CharField(max_length=250)
     category = models.CharField(max_length=250)
@@ -62,7 +40,7 @@ class OrderProduct(models.Model):
     """
     Order made on a single product
     """
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
@@ -78,8 +56,7 @@ class Order(models.Model):
     """
     Total order of all Products
     """
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL,
-                              on_delete=models.CASCADE)
+    client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     products = models.ManyToManyField(OrderProduct)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField(blank=True, null=True)
@@ -90,7 +67,7 @@ class Order(models.Model):
     payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.buyer.username}'s Order"
+        return f"{self.client.username}'s Order"
 
     def get_total(self):
         total = 0
@@ -132,7 +109,6 @@ class Payment(models.Model):
     method = models.CharField(max_length=10, choices=METHOD)
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    # todo: deduct amount when class is called
     def __str__(self):
         return f"{self.amount} - {self.user.username}"
 

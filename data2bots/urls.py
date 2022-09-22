@@ -35,13 +35,14 @@ schema_view = swagger_get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('api/', include('client.api.urls')),  # api urls
     path('api/',
          include([
              path('', include(('client.api.urls', 'post'), namespace='orders')),
              path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name="swagger-schema"),
          ])
          ),
+
+    # Authentication urls
     path('api/token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
     path('api/user/register/', RegisterView.as_view(), name="register_user"),  # for registration

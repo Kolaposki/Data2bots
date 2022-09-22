@@ -1,6 +1,6 @@
 from django.urls import path
 
-from client.views import HelloView, ProductsView, CartView, OrderView
+from client.views import ProductsView, CartView, OrderView
 
 # api urls
 urlpatterns = [

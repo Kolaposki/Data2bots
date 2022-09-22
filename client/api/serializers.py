@@ -45,20 +45,20 @@ class PaymentSerializer(serializers.ModelSerializer):
 class OrderProductSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField()
-    buyer = UserSerializer(read_only=True)
-    buyer_id = serializers.IntegerField()
+    client = UserSerializer(read_only=True)
+    client_id = serializers.IntegerField()
 
     class Meta:
         model = OrderProduct
         fields = "__all__"
         read_only_fields = ("ordered",)
-        extra_kwargs = {"buyer_id": {"write_only": True}, "product_id": {"write_only": True}}
+        extra_kwargs = {"client_id": {"write_only": True}, "product_id": {"write_only": True}}
 
 
 class OrderSerializer(serializers.ModelSerializer):
     products = OrderProductSerializer(read_only=True, many=True)
-    buyer = UserSerializer(read_only=True)
-    buyer_id = serializers.IntegerField()
+    client = UserSerializer(read_only=True)
+    client_id = serializers.IntegerField()
 
     payment = PaymentSerializer(read_only=True)
     payment_id = serializers.IntegerField()
@@ -70,5 +70,5 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = "__all__"
-        extra_kwargs = {"buyer_id": {"write_only": True}, "products_id": {"write_only": True},
+        extra_kwargs = {"client_id": {"write_only": True}, "products_id": {"write_only": True},
                         "payment_id": {"write_only": True}}
