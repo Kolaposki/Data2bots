@@ -50,20 +50,26 @@ class OrderProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderProduct
         fields = "__all__"
-        # fields = ('id', 'buyer', 'product', 'ordered', 'quantity',)
         read_only_fields = ("ordered",)
+        extra_kwargs = {"buyer_id": {"write_only": True}, "product_id": {"write_only": True}}
 
 
 class OrderSerializer(serializers.ModelSerializer):
     products = OrderProductSerializer(read_only=True, many=True)
+    # products_id = serializers.IntegerField()
+    # products_id = serializers.ListField(write_only=True)
     buyer = UserSerializer(read_only=True)
     buyer_id = serializers.IntegerField()
-    payment = PaymentSerializer()
-    get_total = serializers.FloatField(read_only=True)
 
-    # address = Address(read_only=True, many=True)
+    payment = PaymentSerializer(read_only=True)
+    payment_id = serializers.IntegerField()
+
+    address = AddressSerializer(read_only=True)
+    address_id = serializers.IntegerField()
+    get_total = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Order
-        # fields = ('products',)
         fields = "__all__"
+        extra_kwargs = {"buyer_id": {"write_only": True}, "products_id": {"write_only": True},
+                        "payment_id": {"write_only": True}}

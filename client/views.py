@@ -7,38 +7,9 @@ from rest_framework.views import APIView
 from django.conf import settings
 from drf_user.models import User
 from rest_framework import status, exceptions
-
+import datetime
 from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderProductSerializer
-from .models import Product, Order, OrderProduct
-
-
-def add_to_cart(request, slug):
-    item = get_object_or_404(Item, slug=slug)
-    order_item, created = OrderItem.objects.get_or_create(
-        item=item,
-        user=request.user,
-        ordered=False
-    )
-    order_qs = Order.objects.filter(user=request.user, ordered=False)
-    if order_qs.exists():
-        order = order_qs[0]
-        # check if the order item is in the order
-        if order.items.filter(item__slug=item.slug).exists():
-            order_item.quantity += 1
-            order_item.save()
-            messages.info(request, "This item quantity was updated.")
-            return redirect("core:order-summary")
-        else:
-            order.items.add(order_item)
-            messages.info(request, "This item was added to your cart.")
-            return redirect("core:order-summary")
-    else:
-        ordered_date = timezone.now()
-        order = Order.objects.create(
-            user=request.user, ordered_date=ordered_date)
-        order.items.add(order_item)
-        messages.info(request, "This item was added to your cart.")
-        return redirect("core:order-summary")
+from .models import Product, Order, OrderProduct, Payment, Address
 
 
 # api-view for order
@@ -64,9 +35,92 @@ class OrderView(APIView):
                 return Response(data, exc.status_code)
 
         # No PK provided. return all Orders
+        # TODO: Return only orders by a buyer ....filter
         order = Order.objects.all()
         serializer = OrderSerializer(order, many=True)  # return all orders
         return Response({"order": serializer.data}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        try:
+            # Validate data then save
+            serializer = OrderSerializer(data=request.data)
+
+            if serializer.is_valid():
+                validated_data = serializer.validated_data
+                print("serializer.is_valid()")
+                # verify if paymnet is valid
+                try:
+                    payment = Payment.objects.get(pk=validated_data.get('payment_id'))
+                except Payment.DoesNotExist:
+                    exc = exceptions.NotFound()
+                    data = {'payment-detail': exc.detail}
+                    return Response(data, exc.status_code)
+
+                products_id = request.data.get('products_id')
+                print("products_id", products_id)
+                if not products_id:
+                    print("No products_id")
+                    # TODO: returnerrors
+                    return None
+
+                products_id_list = eval(products_id)
+                print("products_id", products_id_list, products_id_list[0])
+                if type(products_id_list) is not list:
+                    print("Not a list")
+                    # TODO: returnerrors
+                    return None
+                order_obj, created = Order.objects.get_or_create(
+                    buyer=request.user,
+                    ordered=False
+                )
+
+                # add products to order
+                try:
+                    for pk in products_id_list:
+                        order_product = OrderProduct.objects.get(pk=pk)
+                        order_obj.products.add(order_product)
+                except OrderProduct.DoesNotExist:
+                    exc = exceptions.NotFound()
+                    data = {'OrderProduct-detail': exc.detail}
+                    return Response(data, exc.status_code)
+
+                try:
+                    address = Address.objects.get(pk=validated_data.get('address_id'))
+                except Address.DoesNotExist:
+                    exc = exceptions.NotFound()
+                    data = {'address-detail': exc.detail}
+                    return Response(data, exc.status_code)
+
+                order_obj.address = address
+                # check if payment amount is enough
+                if payment.amount >= order_obj.get_total():
+                    payment.amount = float(payment.amount) - float(order_obj.get_total())  # deduct balance
+                    order_obj.payment = payment
+                    # process order here
+                    order_obj.ordered_date = datetime.datetime.now()
+                    order_obj.ordered = True
+                    order_obj.save()
+                else:
+                    #     not enough money
+                    return Response({"status": "error", "result": "Not enough money. Please fund"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                new_serializer = OrderSerializer(data=order_obj)
+                if new_serializer.is_valid():
+                    new_serializer.save()
+                return Response({"status": "success", "result": new_serializer.data, },
+                                status=status.HTTP_201_CREATED)
+            else:
+                error_dict = {}
+                for field_name, field_errors in serializer.errors.items():
+                    print(field_name, field_errors)
+                    error_dict[field_name] = field_errors[0]
+                return Response({"status": "error", "result": error_dict}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(e)
+            return Response({"status": "error", "result": "An error occurred", "message": str(e)},
+                            status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 # api-view for cart
@@ -92,6 +146,8 @@ class CartView(APIView):
                 return Response(data, exc.status_code)
 
         # No PK provided. return all OrderProducts
+        # TODO: Return only cart_product by a buyer ....filter
+
         order_products = OrderProduct.objects.all()
         serializer = OrderProductSerializer(order_products, many=True)  # return all order_products
         return Response({"order_products": serializer.data}, status=status.HTTP_200_OK)
