@@ -341,7 +341,7 @@ class PaymentView(APIView):
 
     def get(self, request, pk=None):
         """
-        This view is responsible for getting a cart-product, or otherwise all products in all carts
+        This view is responsible for getting payment
         """
         if pk:
             try:
@@ -359,6 +359,14 @@ class PaymentView(APIView):
         serializer = PaymentSerializer(payments, many=True)  # return all payments
         return Response({"payments": serializer.data}, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='User ID'),
+            'amount': openapi.Schema(type=openapi.TYPE_INTEGER, description='Amount'),
+            'method': openapi.Schema(type=openapi.TYPE_STRING, description='Method of payment (CASH/CARD) in CAPS'),
+        }),
+        responses={200: PaymentSerializer, 400: 'Bad Request'})  # for documentation
     def post(self, request):
         try:
             # Validate data then save
