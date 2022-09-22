@@ -73,12 +73,14 @@ class CartView(APIView):
                 # TODO: use validated_data instead
                 product = get_object_or_404(Product, pk=request.data.get('product_id'))
                 buyer_id = request.data.get('buyer_id')
+
+                # check if the product is in cart, then update it. Else add product to cart.
                 cart_item, created = OrderProduct.objects.get_or_create(
                     product=product,
                     buyer_id=buyer_id,
                     ordered=False
                 )
-                # assumed new quantity is added to old`quantity from the frontend/client
+                # assumed new quantity is added to old quantity from the frontend/client
                 cart_item.quantity = int(request.data.get('quantity'))
                 cart_item.save()
                 product_serializer = ProductSerializer(product)
@@ -86,7 +88,7 @@ class CartView(APIView):
                     'id': cart_item.id,
                     'quantity': cart_item.quantity,
                     'buyer_id': cart_item.buyer.id,
-                    'product': product_serializer.data} }, status=status.HTTP_201_CREATED)
+                    'product': product_serializer.data}}, status=status.HTTP_201_CREATED)
 
             else:
                 error_dict = {}
@@ -97,7 +99,9 @@ class CartView(APIView):
 
         except Exception as e:
             print(e)
-            return Response({"status": "error", "result": "An error occurred"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+            return Response({"status": "error", "result": "An error occurred while processing the request",
+                             'message': str(e)},
+                            status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def delete(self, request, pk=None):
         order_product = get_object_or_404(OrderProduct, pk=pk)
