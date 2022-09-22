@@ -1,6 +1,6 @@
 from django.urls import path
 
-from client.views import ProductsView, CartView, OrderView
+from client.views import ProductsView, CartView, OrderView, PaymentView
 
 # api urls
 urlpatterns = [
@@ -15,5 +15,9 @@ urlpatterns = [
     # Order urls
     path("orders/", OrderView.as_view(), name="order_products"),
     path("orders/<int:pk>/", OrderView.as_view(), name="order_products_detail"),
+
+    # Order urls
+    path("payment/", PaymentView.as_view(), name="payment"),
+    path("payment/<int:pk>/", PaymentView.as_view(), name="payment_detail"),
 
 ]

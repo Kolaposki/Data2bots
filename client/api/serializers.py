@@ -35,10 +35,12 @@ class UserSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     user_id = serializers.IntegerField()
+    # method = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
         fields = "__all__"
+        read_only_fields = ("timestamp", "charge_id")
         extra_kwargs = {"amount": {"write_only": True}}
 
 

@@ -38,7 +38,7 @@ class Product(models.Model):
 
 class OrderProduct(models.Model):
     """
-    Order made on a single product
+    Order made on a single product. Think of this as cart.
     """
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)

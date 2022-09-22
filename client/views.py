@@ -8,7 +8,8 @@ from django.conf import settings
 from drf_user.models import User
 from rest_framework import status, exceptions
 import datetime
-from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderProductSerializer
+from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderProductSerializer, \
+    PaymentSerializer
 from .models import Product, Order, OrderProduct, Payment, Address
 
 # swagger docs
@@ -332,3 +333,58 @@ def get_tokens_for_user(user):
         'refresh': str(refresh),
         'access': str(refresh.access_token),
     }
+
+
+# api used for making payment
+class PaymentView(APIView):
+    permission_classes = [IsAuthenticated]  # only allow authenticated users
+
+    def get(self, request, pk=None):
+        """
+        This view is responsible for getting a cart-product, or otherwise all products in all carts
+        """
+        if pk:
+            try:
+
+                payment = Payment.objects.get(pk=pk, user=request.user)
+                serializer = PaymentSerializer(payment)
+                return Response({"payment": serializer.data}, status=status.HTTP_200_OK)
+            except Payment.DoesNotExist:
+                exc = exceptions.NotFound()
+                data = {'Payment-detail': exc.detail}
+                return Response(data, exc.status_code)
+
+        # No PK provided. return all payments made by user
+        payments = Payment.objects.filter(user=request.user)
+        serializer = PaymentSerializer(payments, many=True)  # return all payments
+        return Response({"payments": serializer.data}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        try:
+            # Validate data then save
+            serializer = PaymentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"status": "success", "result": serializer.data, },
+                                status=status.HTTP_201_CREATED)
+            else:
+                error_dict = {}
+                for field_name, field_errors in serializer.errors.items():
+                    print(field_name, field_errors)
+                    error_dict[field_name] = field_errors[0]
+                return Response({"status": "error", "result": error_dict}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(e)
+            return Response({"status": "error", "result": "An error occurred", "message": str(e)},
+                            status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def delete(self, request, pk=None):
+        try:
+            payment = Payment.objects.get(pk=pk, user=request.user)
+            payment.delete()
+            return Response({"status": "success", "result": "Payment Deleted"}, status=status.HTTP_202_ACCEPTED)
+        except Payment.DoesNotExist:
+            exc = exceptions.NotFound()
+            data = {'Payment details: ': exc.detail}
+            return Response(data, exc.status_code)
