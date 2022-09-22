@@ -62,23 +62,18 @@ class CartView(APIView):
 
     def post(self, request):
         try:
-            # Validate data then save
-
-            # Check if the product is in cart already
-            # TODO: Validate the request data
-
             serializer = OrderProductSerializer(data=request.data)
 
             if serializer.is_valid():
-                # TODO: use validated_data instead
+                validated_data = serializer.validated_data
                 try:
-                    product = Product.objects.get(pk=request.data.get('product_id'))
+                    product = Product.objects.get(pk=validated_data.get('product_id'))
                 except Product.DoesNotExist:
                     exc = exceptions.NotFound()
                     data = {'detail': exc.detail}
                     return Response(data, exc.status_code)
 
-                buyer_id = request.data.get('buyer_id')
+                buyer_id = validated_data.get('buyer_id')
 
                 # check if the product is in cart, then update it. Else add product to cart.
                 cart_item, created = OrderProduct.objects.get_or_create(
@@ -87,7 +82,7 @@ class CartView(APIView):
                     ordered=False
                 )
                 # assumed new quantity is added to old quantity from the frontend/client
-                cart_item.quantity = int(request.data.get('quantity'))
+                cart_item.quantity = int(validated_data.get('quantity'))
                 cart_item.save()
                 product_serializer = ProductSerializer(product)
                 return Response({"status": "success", "result": {
