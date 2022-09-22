@@ -12,8 +12,37 @@ from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer,
 from .models import Product, Order, OrderProduct
 
 
-# api-view for products
-class OrderProductView(APIView):
+def add_to_cart(request, slug):
+    item = get_object_or_404(Item, slug=slug)
+    order_item, created = OrderItem.objects.get_or_create(
+        item=item,
+        user=request.user,
+        ordered=False
+    )
+    order_qs = Order.objects.filter(user=request.user, ordered=False)
+    if order_qs.exists():
+        order = order_qs[0]
+        # check if the order item is in the order
+        if order.items.filter(item__slug=item.slug).exists():
+            order_item.quantity += 1
+            order_item.save()
+            messages.info(request, "This item quantity was updated.")
+            return redirect("core:order-summary")
+        else:
+            order.items.add(order_item)
+            messages.info(request, "This item was added to your cart.")
+            return redirect("core:order-summary")
+    else:
+        ordered_date = timezone.now()
+        order = Order.objects.create(
+            user=request.user, ordered_date=ordered_date)
+        order.items.add(order_item)
+        messages.info(request, "This item was added to your cart.")
+        return redirect("core:order-summary")
+
+
+# api-view for CartView
+class CartView(APIView):
     """
        Gets all the ordered-products or by id.
     """
@@ -23,9 +52,10 @@ class OrderProductView(APIView):
         if pk:
             order_product = get_object_or_404(OrderProduct, pk=pk)
             serializer = OrderProductSerializer(order_product)
-            return Response({"order_product": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"order_product": serializer.data},
+                            status=status.HTTP_200_OK)
 
-        # No PK provided. return all OrderProduct
+        # No PK provided. return all OrderProducts
         order_products = OrderProduct.objects.all()
         serializer = OrderProductSerializer(order_products, many=True)  # return all order_products
         return Response({"order_products": serializer.data}, status=status.HTTP_200_OK)
@@ -33,11 +63,31 @@ class OrderProductView(APIView):
     def post(self, request):
         try:
             # Validate data then save
+
+            # Check if the product is in cart already
+            # TODO: Validate the request data
+
             serializer = OrderProductSerializer(data=request.data)
+
             if serializer.is_valid():
-                serializer.save()
-                return Response({"status": "success", "result": serializer.data, },
-                                status=status.HTTP_201_CREATED)
+                # TODO: use validated_data instead
+                product = get_object_or_404(Product, pk=request.data.get('product_id'))
+                buyer_id = request.data.get('buyer_id')
+                cart_item, created = OrderProduct.objects.get_or_create(
+                    product=product,
+                    buyer_id=buyer_id,
+                    ordered=False
+                )
+                # assumed new quantity is added to old`quantity from the frontend/client
+                cart_item.quantity = int(request.data.get('quantity'))
+                cart_item.save()
+                product_serializer = ProductSerializer(product)
+                return Response({"status": "success", "result": {
+                    'id': cart_item.id,
+                    'quantity': cart_item.quantity,
+                    'buyer_id': cart_item.buyer.id,
+                    'product': product_serializer.data} }, status=status.HTTP_201_CREATED)
+
             else:
                 error_dict = {}
                 for field_name, field_errors in serializer.errors.items():
