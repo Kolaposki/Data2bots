@@ -39,6 +39,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+        extra_kwargs = {"amount": {"write_only": True}}
 
 
 class OrderProductSerializer(serializers.ModelSerializer):

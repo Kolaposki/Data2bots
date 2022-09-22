@@ -26,7 +26,7 @@ class OrderView(APIView):
         """
         if pk:
             try:
-                order = Order.objects.get(pk=pk)
+                order = Order.objects.get(pk=pk, buyer=request.user)
                 serializer = OrderSerializer(order)
                 return Response({"order": serializer.data}, status=status.HTTP_200_OK)
             except OrderProduct.DoesNotExist:
@@ -35,10 +35,9 @@ class OrderView(APIView):
                 return Response(data, exc.status_code)
 
         # No PK provided. return all Orders
-        # TODO: Return only orders by a buyer ....filter
-        order = Order.objects.all()
+        order = Order.objects.filter(buyer=request.user)
         serializer = OrderSerializer(order, many=True)  # return all orders
-        return Response({"order": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"orders": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
         try:
@@ -48,9 +47,9 @@ class OrderView(APIView):
             if serializer.is_valid():
                 validated_data = serializer.validated_data
                 print("serializer.is_valid()")
-                # verify if paymnet is valid
+                # verify if payment is valid
                 try:
-                    payment = Payment.objects.get(pk=validated_data.get('payment_id'))
+                    payment = Payment.objects.get(pk=validated_data.get('payment_id'), user=request.user)
                 except Payment.DoesNotExist:
                     exc = exceptions.NotFound()
                     data = {'payment-detail': exc.detail}
@@ -59,16 +58,16 @@ class OrderView(APIView):
                 products_id = request.data.get('products_id')
                 print("products_id", products_id)
                 if not products_id:
-                    print("No products_id")
-                    # TODO: returnerrors
-                    return None
+                    return Response({"status": "error", "result": "products_id must be an array or list"},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
                 products_id_list = eval(products_id)
                 print("products_id", products_id_list, products_id_list[0])
                 if type(products_id_list) is not list:
-                    print("Not a list")
-                    # TODO: returnerrors
-                    return None
+                    return Response({"status": "error", "result": "products_id must be an array or list"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                # create order object or use previously uncompleted order object
                 order_obj, created = Order.objects.get_or_create(
                     buyer=request.user,
                     ordered=False
@@ -77,15 +76,18 @@ class OrderView(APIView):
                 # add products to order
                 try:
                     for pk in products_id_list:
+                        # todo : validate if its for the user, OrderProduct.objects.get(pk=pk, buyer=request.user)
                         order_product = OrderProduct.objects.get(pk=pk)
                         order_obj.products.add(order_product)
                 except OrderProduct.DoesNotExist:
                     exc = exceptions.NotFound()
-                    data = {'OrderProduct-detail': exc.detail}
+                    data = {'OrderProduct object does not exist in the database - products_id ': exc.detail}
                     return Response(data, exc.status_code)
 
                 try:
                     address = Address.objects.get(pk=validated_data.get('address_id'))
+                    # todo : validate if its for the user, Address.objects.get(pk=pk, buyer=request.user)
+
                 except Address.DoesNotExist:
                     exc = exceptions.NotFound()
                     data = {'address-detail': exc.detail}
@@ -93,22 +95,28 @@ class OrderView(APIView):
 
                 order_obj.address = address
                 # check if payment amount is enough
+                print("to pay: ", order_obj.get_total())
+                print("funds: : ", payment.amount)
                 if payment.amount >= order_obj.get_total():
                     payment.amount = float(payment.amount) - float(order_obj.get_total())  # deduct balance
                     order_obj.payment = payment
+
                     # process order here
                     order_obj.ordered_date = datetime.datetime.now()
                     order_obj.ordered = True
                     order_obj.save()
+                    payment.save()
                 else:
                     #     not enough money
                     return Response({"status": "error", "result": "Not enough money. Please fund"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
-                new_serializer = OrderSerializer(data=order_obj)
-                if new_serializer.is_valid():
-                    new_serializer.save()
-                return Response({"status": "success", "result": new_serializer.data, },
+                return Response({"status": "success", "result": {
+                    'id': order_obj.pk,
+                    'total_paid': order_obj.get_total(),
+                    'buyer': order_obj.buyer.id,
+                    'ordered_date': order_obj.ordered_date
+                }, "message": 'Created order successfully'},
                                 status=status.HTTP_201_CREATED)
             else:
                 error_dict = {}
@@ -137,6 +145,8 @@ class CartView(APIView):
         """
         if pk:
             try:
+                # todo : validate if its for the user, Address.objects.get(pk=pk, buyer=request.user)
+
                 order_product = OrderProduct.objects.get(pk=pk)
                 serializer = OrderProductSerializer(order_product)
                 return Response({"order_product": serializer.data}, status=status.HTTP_200_OK)
@@ -147,6 +157,7 @@ class CartView(APIView):
 
         # No PK provided. return all OrderProducts
         # TODO: Return only cart_product by a buyer ....filter
+        # todo : validate if its for the user, Address.objects.get(pk=pk, buyer=request.user)
 
         order_products = OrderProduct.objects.all()
         serializer = OrderProductSerializer(order_products, many=True)  # return all order_products
@@ -162,6 +173,8 @@ class CartView(APIView):
             if serializer.is_valid():
                 validated_data = serializer.validated_data
                 try:
+                    # todo : validate if its for the user, Address.objects.get(pk=pk, buyer=request.user)
+
                     product = Product.objects.get(pk=validated_data.get('product_id'))
                 except Product.DoesNotExist:
                     exc = exceptions.NotFound()
@@ -203,6 +216,8 @@ class CartView(APIView):
 
     def delete(self, request, pk=None):
         try:
+            # todo : validate if its for the user, Address.objects.get(pk=pk, buyer=request.user)
+
             order_product = OrderProduct.objects.get(pk=pk)
             order_product.delete()
             return Response({"status": "success", "result": "Item Deleted"}, status=status.HTTP_202_ACCEPTED)
@@ -221,6 +236,8 @@ class ProductsView(APIView):
 
     def get(self, request, pk=None):
         if pk:
+            # todo : validate if its for the user, Address.objects.get(pk=pk, buyer=request.user)
+
             product = get_object_or_404(Product, pk=pk)
             serializer = ProductSerializer(product)
             return Response({"product": serializer.data}, status=status.HTTP_200_OK)
