@@ -12,25 +12,15 @@ make_refund_accepted.short_description = 'Update orders to refund granted'
 class OrderAdmin(admin.ModelAdmin):
     list_display = ['buyer',
                     'ordered',
-                    'being_delivered',
-                    'received',
-                    'refund_requested',
-                    'refund_granted',
-                    'shipping_address',
-                    'billing_address',
+                    'address',
                     'payment',
                     ]
     list_display_links = [
         'buyer',
-        'shipping_address',
-        'billing_address',
+        'address',
         'payment',
     ]
-    list_filter = ['ordered',
-                   'being_delivered',
-                   'received',
-                   'refund_requested',
-                   'refund_granted']
+    list_filter = ['ordered', ]
 
     actions = [make_refund_accepted]
 
