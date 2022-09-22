@@ -41,10 +41,39 @@ def add_to_cart(request, slug):
         return redirect("core:order-summary")
 
 
-# api-view for CartView
+# api-view for order
+class OrderView(APIView):
+    """
+      OrderView
+      CRUD functionalities for order
+    """
+    permission_classes = [IsAuthenticated]  # only allow authenticated users
+
+    def get(self, request, pk=None):
+        """
+        This view is responsible for getting a buyer's order, or otherwise all orders
+        """
+        if pk:
+            try:
+                order = Order.objects.get(pk=pk)
+                serializer = OrderSerializer(order)
+                return Response({"order": serializer.data}, status=status.HTTP_200_OK)
+            except OrderProduct.DoesNotExist:
+                exc = exceptions.NotFound()
+                data = {'order-detail': exc.detail}
+                return Response(data, exc.status_code)
+
+        # No PK provided. return all Orders
+        order = Order.objects.all()
+        serializer = OrderSerializer(order, many=True)  # return all orders
+        return Response({"order": serializer.data}, status=status.HTTP_200_OK)
+
+
+# api-view for cart
 class CartView(APIView):
     """
-       Gets all the ordered-products or by id.
+      CartView
+      CRUD functionalities for cart
     """
     permission_classes = [IsAuthenticated]  # only allow authenticated users
 
@@ -53,10 +82,14 @@ class CartView(APIView):
         This view is responsible for getting a cart-product, or otherwise all products in all carts
         """
         if pk:
-            order_product = get_object_or_404(OrderProduct, pk=pk)
-            serializer = OrderProductSerializer(order_product)
-            return Response({"order_product": serializer.data},
-                            status=status.HTTP_200_OK)
+            try:
+                order_product = OrderProduct.objects.get(pk=pk)
+                serializer = OrderProductSerializer(order_product)
+                return Response({"order_product": serializer.data}, status=status.HTTP_200_OK)
+            except OrderProduct.DoesNotExist:
+                exc = exceptions.NotFound()
+                data = {'cart-detail': exc.detail}
+                return Response(data, exc.status_code)
 
         # No PK provided. return all OrderProducts
         order_products = OrderProduct.objects.all()
@@ -95,7 +128,9 @@ class CartView(APIView):
                     'id': cart_item.id,
                     'quantity': cart_item.quantity,
                     'buyer_id': cart_item.buyer.id,
-                    'product': product_serializer.data}}, status=status.HTTP_201_CREATED)
+                    'product': product_serializer.data,
+                    'total_price': cart_item.get_total_product_price()
+                }}, status=status.HTTP_201_CREATED)
 
             else:
                 error_dict = {}
