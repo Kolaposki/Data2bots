@@ -49,6 +49,9 @@ class CartView(APIView):
     permission_classes = [IsAuthenticated]  # only allow authenticated users
 
     def get(self, request, pk=None):
+        """
+        This view is responsible for getting a cart-product, or otherwise all products in all carts
+        """
         if pk:
             order_product = get_object_or_404(OrderProduct, pk=pk)
             serializer = OrderProductSerializer(order_product)
@@ -61,6 +64,9 @@ class CartView(APIView):
         return Response({"order_products": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
+        """
+        This view is responsible for adding a product to cart, and also for editing a product in cart
+        """
         try:
             serializer = OrderProductSerializer(data=request.data)
 
@@ -70,7 +76,7 @@ class CartView(APIView):
                     product = Product.objects.get(pk=validated_data.get('product_id'))
                 except Product.DoesNotExist:
                     exc = exceptions.NotFound()
-                    data = {'detail': exc.detail}
+                    data = {'product-detail': exc.detail}
                     return Response(data, exc.status_code)
 
                 buyer_id = validated_data.get('buyer_id')
