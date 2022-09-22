@@ -18,7 +18,7 @@ class AddressSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         """Passing model metadata"""
-
+        ref_name = 'Main-User'
         model = User
         fields = (
             "id",
@@ -57,8 +57,6 @@ class OrderProductSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     products = OrderProductSerializer(read_only=True, many=True)
-    # products_id = serializers.IntegerField()
-    # products_id = serializers.ListField(write_only=True)
     buyer = UserSerializer(read_only=True)
     buyer_id = serializers.IntegerField()
 

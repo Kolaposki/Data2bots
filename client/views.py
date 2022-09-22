@@ -11,6 +11,10 @@ import datetime
 from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderProductSerializer
 from .models import Product, Order, OrderProduct, Payment, Address
 
+# swagger docs
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 
 # api-view for order
 class OrderView(APIView):
@@ -29,7 +33,7 @@ class OrderView(APIView):
                 order = Order.objects.get(pk=pk, buyer=request.user)
                 serializer = OrderSerializer(order)
                 return Response({"order": serializer.data}, status=status.HTTP_200_OK)
-            except OrderProduct.DoesNotExist:
+            except Order.DoesNotExist:
                 exc = exceptions.NotFound()
                 data = {'order-detail': exc.detail}
                 return Response(data, exc.status_code)
@@ -39,6 +43,16 @@ class OrderView(APIView):
         serializer = OrderSerializer(order, many=True)  # return all orders
         return Response({"orders": serializer.data}, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'products_id': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_INTEGER),
+                                          description='Cart IDS'),
+            'buyer_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Client ID'),
+            'address_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Address ID'),
+            'payment_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Payment ID'),
+        }),
+        responses={200: OrderSerializer, 400: 'Bad Request'})  # for documentation
     def post(self, request):
         try:
             # Validate data then save
@@ -61,7 +75,11 @@ class OrderView(APIView):
                     return Response({"status": "error", "result": "products_id must be an array or list"},
                                     status=status.HTTP_400_BAD_REQUEST)
 
-                products_id_list = eval(products_id)
+                try:
+                    products_id_list = eval(products_id)
+                except TypeError:
+                    products_id_list = eval(str(products_id))
+
                 print("products_id", products_id_list, products_id_list[0])
                 if type(products_id_list) is not list:
                     return Response({"status": "error", "result": "products_id must be an array or list"},
@@ -163,6 +181,14 @@ class CartView(APIView):
         serializer = OrderProductSerializer(order_products, many=True)  # return all order_products
         return Response({"order_products": serializer.data}, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'buyer_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Client ID'),
+            'product_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Product ID'),
+            'quantity': openapi.Schema(type=openapi.TYPE_INTEGER, description='Quantity of products'),
+        }),
+        responses={200: OrderSerializer, 400: 'Bad Request'})  # for documentation
     def post(self, request):
         """
         This view is responsible for adding a product to cart, and also for editing a product in cart
@@ -310,8 +336,3 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-
-class HelloView(APIView):
-    def get(self, request):
-        content = {'message': 'Hello, World!'}
-        return Response(content)

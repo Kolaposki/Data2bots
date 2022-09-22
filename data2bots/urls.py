@@ -17,15 +17,35 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt import views as jwt_views
 from client.views import RegisterView
+from rest_framework import permissions
+
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view as swagger_get_schema_view
+
+#  swagger docs url settings
+schema_view = swagger_get_schema_view(
+    openapi.Info(
+        title="Data2bots API",
+        default_version='1.0.0',
+        description="API documentation of Ordering App",
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
+)  # for documentation
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('client.api.urls')),
-
+    # path('api/', include('client.api.urls')),  # api urls
+    path('api/',
+         include([
+             path('', include(('client.api.urls', 'post'), namespace='orders')),
+             path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name="swagger-schema"),
+         ])
+         ),
     path('api/token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/user/register/', RegisterView.as_view(), name="register_user"),
+    path('api/user/register/', RegisterView.as_view(), name="register_user"),  # for registration
 
-    path('api/user/', include('drf_user.urls')),  # drf_user urls
+    path('api/user/', include('drf_user.urls')),  # for authentication except registration
 
 ]
