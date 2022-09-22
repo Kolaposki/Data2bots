@@ -1,4 +1,3 @@
-from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.generics import CreateAPIView, get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
 from drf_user.models import User
+from rest_framework import status, exceptions
 
 from .api.serializers import UserSerializer, ProductSerializer, OrderSerializer, OrderProductSerializer
 from .models import Product, Order, OrderProduct
@@ -71,7 +71,13 @@ class CartView(APIView):
 
             if serializer.is_valid():
                 # TODO: use validated_data instead
-                product = get_object_or_404(Product, pk=request.data.get('product_id'))
+                try:
+                    product = Product.objects.get(pk=request.data.get('product_id'))
+                except Product.DoesNotExist:
+                    exc = exceptions.NotFound()
+                    data = {'detail': exc.detail}
+                    return Response(data, exc.status_code)
+
                 buyer_id = request.data.get('buyer_id')
 
                 # check if the product is in cart, then update it. Else add product to cart.
@@ -104,9 +110,14 @@ class CartView(APIView):
                             status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def delete(self, request, pk=None):
-        order_product = get_object_or_404(OrderProduct, pk=pk)
-        order_product.delete()
-        return Response({"status": "success", "result": "Item Deleted"})
+        try:
+            order_product = OrderProduct.objects.get(pk=pk)
+            order_product.delete()
+            return Response({"status": "success", "result": "Item Deleted"}, status=status.HTTP_202_ACCEPTED)
+        except OrderProduct.DoesNotExist:
+            exc = exceptions.NotFound()
+            data = {'detail': exc.detail}
+            return Response(data, exc.status_code)
 
 
 # api-view for products
