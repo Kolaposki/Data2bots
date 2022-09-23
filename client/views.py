@@ -273,58 +273,6 @@ class ProductsView(APIView):
         return Response({"products": serializer.data}, status=status.HTTP_200_OK)
 
 
-# API for registering users
-class RegisterView(CreateAPIView):
-    """
-    Register View
-
-    Register a new user to the system.
-    The data required are username, email, name, password and mobile (optional).
-
-    Author: Himanshu Shankar (https://himanshus.com)
-            Aditya Gupta (https://github.com/ag93999)
-    """
-
-    # renderer_classes = (JSONRenderer,)
-    permission_classes = (AllowAny,)
-    serializer_class = UserSerializer
-
-    def perform_create(self, serializer):
-        """Override perform_create to create user"""
-        data = {
-            "username": serializer.validated_data["username"],
-            "email": serializer.validated_data["email"],
-            "password": serializer.validated_data["password"],
-            "name": serializer.validated_data["name"],
-        }
-        try:
-            data["mobile"] = serializer.validated_data["mobile"]
-        except KeyError:
-            if not settings.USER_SETTINGS["MOBILE_OPTIONAL"]:
-                raise ValidationError({"error": "Mobile is required."})
-
-        new_user = User.objects.create_user(**data)  # Creates a normal user
-        print("new_user", new_user)
-        refresh = RefreshToken.for_user(new_user)
-        print("refresh", refresh)
-
-        data = {
-            "username": new_user.username,
-            "name": new_user.name,
-            "email": new_user.email,
-            "mobile": new_user.mobile,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
-        print("data", data)
-
-        # tokens = get_tokens_for_user(new_user)
-        # TODO : It doesnt return tokens
-        return data
-
-        # return new_user, tokens
-
-
 # extract token from user object
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
