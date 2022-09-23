@@ -26,25 +26,26 @@ Create Superuser:
 
     $ python manage.py createsuperuser
 
-You can now run the development server. Let's assume at port 9900 
+You can now run the development server. Let's assume at port 9900
 
     $ python manage.py runserver 9900 
 
-
 ## API
+
 The REST API endpoints to the app is described below.
 
 ### Register
+
 Create user. The data required are username, email, name, password and mobile (optional).
 
     URL : http://127.0.0.1:9900/api/user/register/
 
     Method : POST
 
-
 ### Login
-Login a user. Takes a set of username and password and returns an access and refresh JSON web
-token pair to prove the authentication of those credentials. Use this access token in the Authorization header as Bearer to authenticate.
+
+Login a user. Takes a set of username and password and returns an access and refresh JSON web token pair to prove the
+authentication of those credentials. Use this access token in the Authorization header as Bearer to authenticate.
 
     URL : http://127.0.0.1:9900/api/token/
 
@@ -56,14 +57,15 @@ token pair to prove the authentication of those credentials. Use this access tok
               }
 
 ### Profile
+
 Returns a profile, provided the authorization token in header.
 
     URL : http://127.0.0.1:9900/api/user/account/
 
     Method : GET
 
-
 ### Update Profile
+
 Update the profile of a user, provided the authorization token in header.
 
     URL : http://127.0.0.1:9900/api/user/account/
@@ -78,14 +80,15 @@ Update the profile of a user, provided the authorization token in header.
               }
 
 ### Products
+
 Returns all products in database. Create products initially using the admin dashboard.
 
     URL : http://127.0.0.1:9900/api/product/
 
     Method : GET
 
-
 ### Payment
+
 Make payment to an account provided the authorization token in header. Method of payment must be in CAPS (CASH or CARD)
 
     URL : http://127.0.0.1:9900/api/user/account/
@@ -98,18 +101,30 @@ Make payment to an account provided the authorization token in header. Method of
                 method	string
               }
 
-
 ### Orders Summary
+
 Get orders made by a user, provided the authorization token in header.
 
     URL : http://127.0.0.1:9900/api/orders/
 
     Method : GET
 
-
 ## Docs
-The rest of the documentation - Swagger 
+
+The rest of the documentation using Swagger.
 
     http://127.0.0.1:9900/api/docs/
 
+You'll need to first generate a Bearer token for authorized requests. Scroll down to the /token/ and click the `Try it
+out` button then fill in the username and password. 
 
+It'll return the token (refresh and access). Copy the access-token, scroll up and click `Authorize` button. It will open a modal. 
+
+In the Bearer section, type ```Bearer``` plus your access-token in the input field. Example, if your access-token is abcdef, type in `Bearer abcdef`. Then click Authorize.
+
+
+## Tests
+
+To run all tests
+
+    $ python manage.py test
